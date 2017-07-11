@@ -1,7 +1,7 @@
-package gentab_test
+package dyntab_test
 
 import (
-	"github.com/simonschneider/gentab"
+	"github.com/simonschneider/dyntab"
 	"os"
 	"reflect"
 	"strconv"
@@ -48,7 +48,7 @@ func Example() {
 		},
 	}
 
-	gentab.PrintTable(os.Stdout, cont, []reflect.Type{reflect.TypeOf(info{}), reflect.TypeOf(container{})})
+	dyntab.PrintTable(os.Stdout, cont, []reflect.Type{reflect.TypeOf(info{}), reflect.TypeOf(container{})})
 	// Output:
 	// +-------+-------+----------------+
 	// | NAME  | DESC  | NUMBER OF SMTH |

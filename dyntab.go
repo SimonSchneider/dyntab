@@ -1,5 +1,5 @@
-// Package gentab creates dynamic tables for structs or slices of structs
-package gentab
+// Package dyntab creates dynamic tables for structs or slices of structs
+package dyntab
 
 import (
 	"errors"

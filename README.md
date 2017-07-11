@@ -1,6 +1,6 @@
-# gentab
+# DYNamicTABles
 
-[![GoDoc](https://godoc.org/github.com/SimonSchneider/gentab?status.svg)](https://godoc.org/github.com/SimonSchneider/gentab)
+[![GoDoc](https://godoc.org/github.com/SimonSchneider/dyntab?status.svg)](https://godoc.org/github.com/SimonSchneider/dyntab)
 
 Dynamic table generation for golang using https://github.com/olekukonko/tablewriter
 
@@ -13,10 +13,10 @@ If you want to override any of the Header, Body or Footer implementation you nee
 Example:
 
 ```go
-package gentab_test
+package dyntab_test
 
 import (
-	"github.com/simonschneider/gentab"
+	"github.com/simonschneider/dyntab"
 	"os"
 	"reflect"
 	"strconv"
@@ -63,7 +63,7 @@ func Example() {
 		},
 	}
 
-	gentab.PrintTable(os.Stdout, cont, []reflect.Type{reflect.TypeOf(info{}), reflect.TypeOf(container{})})
+	dyntab.PrintTable(os.Stdout, cont, []reflect.Type{reflect.TypeOf(info{}), reflect.TypeOf(container{})})
 	// Output:
 	// +-------+-------+----------------+
 	// | NAME  | DESC  | NUMBER OF SMTH |

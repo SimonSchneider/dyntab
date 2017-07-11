@@ -1,4 +1,4 @@
-package gentab
+package dyntab
 
 import (
 	"fmt"
