@@ -1,6 +1,7 @@
-package gentab
+package gentab_test
 
 import (
+	"github.com/simonschneider/gentab"
 	"os"
 	"reflect"
 )
@@ -37,7 +38,7 @@ func Example() {
 		},
 	}
 
-	PrintTable(os.Stdout, cont, []reflect.Type{reflect.TypeOf(info{}), reflect.TypeOf(container{})})
+	gentab.PrintTable(os.Stdout, cont, []reflect.Type{reflect.TypeOf(info{}), reflect.TypeOf(container{})})
 	// Output:
 	// +-------+-------+--------------+
 	// | NAME  | DESC  | CONTAINER ID |
