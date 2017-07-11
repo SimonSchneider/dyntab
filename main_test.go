@@ -4,6 +4,7 @@ import (
 	"github.com/simonschneider/gentab"
 	"os"
 	"reflect"
+	"strconv"
 )
 
 type (
@@ -14,19 +15,28 @@ type (
 	}
 	container struct {
 		info
-		id int64 `tab:"container id"`
+		number int64 `tab:"number of smth"`
 	}
+	containers []container
 )
 
+func (c *containers) Footer() ([]string, error) {
+	sum := int64(0)
+	for _, n := range *c {
+		sum += n.number
+	}
+	return []string{"", "Total", strconv.Itoa(int(sum))}, nil
+}
+
 func Example() {
-	cont := []container{
+	cont := &containers{
 		container{
 			info: info{
 				name:        "hello",
 				secret:      "pretty",
 				description: "world",
 			},
-			id: int64(1),
+			number: int64(2),
 		},
 		container{
 			info: info{
@@ -34,16 +44,18 @@ func Example() {
 				secret:      "sweet",
 				description: "bye",
 			},
-			id: int64(2),
+			number: int64(4),
 		},
 	}
 
 	gentab.PrintTable(os.Stdout, cont, []reflect.Type{reflect.TypeOf(info{}), reflect.TypeOf(container{})})
 	// Output:
-	// +-------+-------+--------------+
-	// | NAME  | DESC  | CONTAINER ID |
-	// +-------+-------+--------------+
-	// | hello | world |            1 |
-	// | good  | bye   |            2 |
-	// +-------+-------+--------------+
+	// +-------+-------+----------------+
+	// | NAME  | DESC  | NUMBER OF SMTH |
+	// +-------+-------+----------------+
+	// | hello | world |              2 |
+	// | good  | bye   |              4 |
+	// +-------+-------+----------------+
+	// |         TOTAL |       6        |
+	// +-------+-------+----------------+
 }
