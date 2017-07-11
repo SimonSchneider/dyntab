@@ -59,6 +59,7 @@ var (
 		testFooter{1, "test1", "testing", 29.2},
 		testFooter{1, "test1", "testing2", 30.8},
 	}
+	exfooterts = []string{"", "total", "60.00"}
 
 	toPrint = []reflect.Type{
 		reflect.TypeOf(testLabeln{}),
@@ -234,6 +235,26 @@ func TestGetFooter_slice(t *testing.T) {
 		if eh != h[i] {
 			t.Error("header incorrect, got:", eh,
 				"expected:", exfooter)
+			return
+		}
+	}
+}
+
+func TestGetFooter_impl(t *testing.T) {
+	h, err := getFooter(&ts)
+	if err != nil {
+		t.Error("error declared", err)
+		return
+	}
+	if len(exfooterts) != len(h) {
+		t.Error("footer not correct lenght, got:", h,
+			"expected:", exfooterts)
+		return
+	}
+	for i, eh := range exfooterts {
+		if eh != h[i] {
+			t.Error("footer incorrect, got:", eh,
+				"expected:", exfooterts)
 			return
 		}
 	}
