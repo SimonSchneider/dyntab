@@ -2,7 +2,6 @@ package gentab
 
 import (
 	"fmt"
-	"os"
 	"reflect"
 	"testing"
 )
@@ -238,10 +237,4 @@ func TestGetFooter_slice(t *testing.T) {
 			return
 		}
 	}
-}
-
-func TestPrintTable(t *testing.T) {
-	PrintTable(os.Stdout, &ts, []reflect.Type{
-		reflect.TypeOf(testLabeln{}),
-	})
 }
