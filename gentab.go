@@ -9,6 +9,8 @@ import (
 	"reflect"
 )
 
+var typesToPrint []reflect.Type
+
 type (
 	// TabFooter interface can be implemented to override the
 	// default footer creation
@@ -30,9 +32,10 @@ type (
 )
 
 // PrintTable prints a table of the interface
-func PrintTable(w io.Writer, in interface{}) (err error) {
+func PrintTable(w io.Writer, in interface{}, toPrint []reflect.Type) (err error) {
 	var header, footer []string
 	var body [][]string
+	typesToPrint = toPrint
 	header, err = getHeader(in)
 	body, err = getBody(in)
 	footer, err = getFooter(in)
@@ -44,68 +47,76 @@ func PrintTable(w io.Writer, in interface{}) (err error) {
 	return nil
 }
 
-func getHeader(inn interface{}) ([]string, error) {
-	n, ok := inn.(TabHeader)
+func getHeader(in interface{}) ([]string, error) {
+	n, ok := in.(TabHeader)
 	if ok {
 		return (n).Header()
 	}
-	in := reflect.Indirect(reflect.ValueOf(inn)).Interface()
-	st, err := findStruct(reflect.TypeOf(in))
-	if err != nil {
-		return nil, err
+	i := reflect.Indirect(reflect.ValueOf(in)).Interface()
+	return getTypeHeader(reflect.TypeOf(i))
+}
+
+func getTypeHeader(in reflect.Type) (s []string, err error) {
+	if in.Kind() == reflect.Slice {
+		in = in.Elem()
 	}
-	s := []string{}
-	for i := 0; i < st.NumField(); i++ {
-		f := st.Field(i)
-		t := f.Tag.Get("tab")
-		if t != "" {
-			if t == "-" {
-				continue
-			}
+	if in.Kind() != reflect.Struct {
+		return nil, errors.New("Not possible to find struct")
+	}
+	return getStructHeader(in), nil
+}
+
+func getStructHeader(in reflect.Type) (s []string) {
+	for i := 0; i < in.NumField(); i++ {
+		field := in.Field(i)
+		t := field.Tag.Get("tab")
+		if t == "-" {
+			continue
+		}
+		if contains(typesToPrint, field.Type) {
+			s = append(s, getStructHeader(field.Type)...)
+		} else if t != "" {
 			s = append(s, t)
-		} else if t != "-" {
-			s = append(s, f.Name)
+		} else {
+			s = append(s, field.Name)
 		}
 	}
-	return s, nil
+	return s
 }
 
-func findStruct(in reflect.Type) (reflect.Type, error) {
-	switch in.Kind() {
-	case reflect.Slice:
-		return findStruct(in.Elem())
-	case reflect.Struct:
-		return in, nil
-	}
-	return nil, errors.New("no struct")
-}
-
-func getBody(inn interface{}) (s [][]string, err error) {
-	n, ok := inn.(TabBody)
+func getBody(in interface{}) (s [][]string, err error) {
+	n, ok := in.(TabBody)
 	if ok {
 		return (n).Body()
 	}
-	in := reflect.Indirect(reflect.ValueOf(inn)).Interface()
-	v := reflect.ValueOf(in)
-	switch reflect.TypeOf(in).Kind() {
-	case reflect.Slice:
-		for i := 0; i < v.Len(); i++ {
-			v.Index(i)
-			new := getBodyLine(v.Index(i).Interface())
-			s = append(s, new)
-		}
-	case reflect.Struct:
-		s = append(s, getBodyLine(in))
-	}
-	return s, nil
+	i := reflect.Indirect(reflect.ValueOf(in)).Interface()
+	return getValueBody(reflect.ValueOf(i)), nil
 }
 
-func getBodyLine(in interface{}) (s []string) {
-	st := reflect.TypeOf(in)
+func getValueBody(in reflect.Value) (s [][]string) {
+	if in.Type().Kind() == reflect.Slice {
+		for i := 0; i < in.Len(); i++ {
+			v := in.Index(i)
+			s = append(s, getStructBody(v))
+		}
+	} else if in.Type().Kind() == reflect.Struct {
+		s = append(s, getStructBody(in))
+	}
+	return
+}
+
+func getStructBody(in reflect.Value) (s []string) {
+	st := in.Type()
 	for i := 0; i < st.NumField(); i++ {
-		v := reflect.ValueOf(in).Field(i)
-		t := st.Field(i).Tag.Get("tab")
-		if t != "-" {
+		v := in.Field(i)
+		field := st.Field(i)
+		t := field.Tag.Get("tab")
+		if t == "-" {
+			continue
+		}
+		if contains(typesToPrint, field.Type) {
+			s = append(s, getStructBody(v)...)
+		} else {
 			s = append(s, getString(v))
 		}
 	}
@@ -131,4 +142,13 @@ func getFooter(in interface{}) ([]string, error) {
 		return (n).Footer()
 	}
 	return []string{}, nil
+}
+
+func contains(in []reflect.Type, t reflect.Type) bool {
+	for _, a := range in {
+		if a == t {
+			return true
+		}
+	}
+	return false
 }
