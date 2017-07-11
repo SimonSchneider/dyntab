@@ -7,6 +7,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"io"
 	"reflect"
+	"time"
 )
 
 var typesToPrint []reflect.Type
@@ -132,6 +133,12 @@ func getString(in reflect.Value) string {
 		return fmt.Sprintf("%.2f", in.Float())
 	case reflect.String:
 		return in.String()
+	}
+	if in.Type() == reflect.TypeOf(time.Time{}) {
+		t, ok := in.Interface().(time.Time)
+		if ok {
+			return t.Format("2006-01-02")
+		}
 	}
 	return ""
 }
