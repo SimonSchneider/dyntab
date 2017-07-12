@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 )
 
 type (
@@ -26,6 +27,13 @@ type (
 		name   string `tab:"name"`
 		desc   string `tab:"desc"`
 		amount float64
+	}
+
+	MyTime struct{ time.Time }
+
+	testToString struct {
+		ID int
+		T  *MyTime
 	}
 )
 
@@ -65,7 +73,17 @@ var (
 		reflect.TypeOf(testLabeln{}),
 		reflect.TypeOf(testLabel{}),
 	}
+
+	test2Sex = [][]string{[]string{"1", "2012-12-12"}}
+	test2S   = testToString{
+		ID: int(1),
+		T:  &MyTime{time.Unix(1355270400, 0)},
+	}
 )
+
+func (t *MyTime) MarshalText() (text []byte, err error) {
+	return []byte((*t).Format("2006-01-02")), nil
+}
 
 func TestGetHeader_struct(t *testing.T) {
 	h, err := getHeader(&l)
@@ -108,7 +126,7 @@ func TestGetHeader_slice(t *testing.T) {
 }
 
 func TestGetHeader_nested(t *testing.T) {
-	typesToPrint = toPrint
+	typesToRecurse = toPrint
 	h, err := getHeader(&ln)
 	if err != nil {
 		t.Error("error declared", err)
@@ -178,7 +196,7 @@ func TestGetBody_slice(t *testing.T) {
 }
 
 func TestGetBody_nested(t *testing.T) {
-	typesToPrint = toPrint
+	typesToRecurse = toPrint
 	h, err := getBody(&ln)
 	if err != nil {
 		t.Error("error declared", err)
@@ -194,6 +212,29 @@ func TestGetBody_nested(t *testing.T) {
 			if eh != h[i][j] {
 				t.Error("header incorrect, got:", eh,
 					"expected:", exheader)
+				return
+			}
+		}
+	}
+}
+
+func TestGetBody_tostring(t *testing.T) {
+	typesToRecurse = toPrint
+	h, err := getBody(&test2S)
+	if err != nil {
+		t.Error("error declared", err)
+		return
+	}
+	if len(test2Sex) != len(h) {
+		t.Error("body not correct lenght, got:", h,
+			"expected:", test2Sex)
+		return
+	}
+	for i, ehr := range test2Sex {
+		for j, eh := range ehr {
+			if eh != h[i][j] {
+				t.Error("body incorrect, got:", h,
+					"expected:", test2Sex)
 				return
 			}
 		}

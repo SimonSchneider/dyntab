@@ -2,15 +2,15 @@
 package dyntab
 
 import (
+	"encoding"
 	"errors"
 	"fmt"
 	"github.com/olekukonko/tablewriter"
 	"io"
 	"reflect"
-	"time"
 )
 
-var typesToPrint []reflect.Type
+var typesToRecurse []reflect.Type
 
 type (
 	// TabFooter interface can be implemented to override the
@@ -32,11 +32,11 @@ type (
 	}
 )
 
-// PrintTable prints a table of the interface
-func PrintTable(w io.Writer, in interface{}, toPrint []reflect.Type) (err error) {
+// PrintTable prints a table of the interface the toRecurse slice is required so it's possible to determine what structs to print as a column and which to recurs into, toRecurse structs will be recursed into.
+func PrintTable(w io.Writer, in interface{}, toRecurse []reflect.Type) (err error) {
 	var header, footer []string
 	var body [][]string
-	typesToPrint = toPrint
+	typesToRecurse = toRecurse
 	header, err = getHeader(in)
 	body, err = getBody(in)
 	footer, err = getFooter(in)
@@ -74,7 +74,7 @@ func getStructHeader(in reflect.Type) (s []string) {
 		if t == "-" {
 			continue
 		}
-		if contains(typesToPrint, field.Type) {
+		if contains(typesToRecurse, field.Type) {
 			s = append(s, getStructHeader(field.Type)...)
 		} else if t != "" {
 			s = append(s, t)
@@ -115,7 +115,7 @@ func getStructBody(in reflect.Value) (s []string) {
 		if t == "-" {
 			continue
 		}
-		if contains(typesToPrint, field.Type) {
+		if contains(typesToRecurse, field.Type) {
 			s = append(s, getStructBody(v)...)
 		} else {
 			s = append(s, getString(v))
@@ -125,6 +125,15 @@ func getStructBody(in reflect.Value) (s []string) {
 }
 
 func getString(in reflect.Value) string {
+	if in.CanInterface() {
+		t, ok := in.Interface().(encoding.TextMarshaler)
+		if ok {
+			s, err := t.MarshalText()
+			if err == nil {
+				return string(s)
+			}
+		}
+	}
 	switch in.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16,
 		reflect.Int32, reflect.Int64:
@@ -133,12 +142,6 @@ func getString(in reflect.Value) string {
 		return fmt.Sprintf("%.2f", in.Float())
 	case reflect.String:
 		return in.String()
-	}
-	if in.Type() == reflect.TypeOf(time.Time{}) {
-		t, ok := in.Interface().(time.Time)
-		if ok {
-			return t.Format("2006-01-02")
-		}
 	}
 	return ""
 }
