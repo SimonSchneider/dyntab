@@ -33,25 +33,25 @@ type (
 	container struct {
 		info
 		number int64 `tab:"number of smth"`
-		T      *MyTime
+		T      MyTime
 	}
 	containers []container
 )
 
-func (t *MyTime) MarshalText() (text []byte, err error) {
-	return []byte((*t).Format("2006-01-02")), nil
+func (t MyTime) MarshalText() (text []byte, err error) {
+	return []byte(t.Format("2006-01-02")), nil
 }
 
-func (c *containers) Footer() ([]string, error) {
+func (c containers) Footer() ([]string, error) {
 	sum := int64(0)
-	for _, n := range *c {
+	for _, n := range c {
 		sum += n.number
 	}
 	return []string{"", "Total", strconv.Itoa(int(sum)), " "}, nil
 }
 
 func Example() {
-	cont := &containers{
+	cont := containers{
 		container{
 			info: info{
 				name:        "hello",
@@ -59,7 +59,7 @@ func Example() {
 				description: "world",
 			},
 			number: int64(2),
-			T:      &MyTime{time.Unix(1355270400, 0)},
+			T:      MyTime{time.Unix(1355270400, 0)},
 		},
 		container{
 			info: info{
@@ -68,7 +68,7 @@ func Example() {
 				description: "bye",
 			},
 			number: int64(4),
-			T:      &MyTime{time.Unix(1355270400, 0)},
+			T:      MyTime{time.Unix(1355270400, 0)},
 		},
 	}
 
@@ -82,6 +82,5 @@ func Example() {
 	// +-------+-------+----------------+------------+
 	// |         TOTAL |       6        |            |
 	// +-------+-------+----------------+------------+
-
 }
 ```
