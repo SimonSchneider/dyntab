@@ -76,7 +76,7 @@ func Example() {
 			reflect.TypeOf(container{}),
 		},
 		[]dyntab.ToSpecialize{
-			dyntab.ToSpecialize{
+			{
 				reflect.TypeOf(time.Location{}),
 				Loc2String,
 			},

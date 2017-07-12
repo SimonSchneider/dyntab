@@ -1,7 +1,6 @@
 package dyntab
 
 import (
-	//"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -51,7 +50,7 @@ var tests = []struct {
 			1, "name",
 		},
 		expectedHead: []string{"id"},
-		expectedBody: [][]string{[]string{"1"}},
+		expectedBody: [][]string{{"1"}},
 		expectedFoot: nil,
 	},
 	{
@@ -64,7 +63,7 @@ var tests = []struct {
 				23, 0, 0, 0, time.UTC),
 		},
 		expectedHead: []string{"id", "tim"},
-		expectedBody: [][]string{[]string{"1",
+		expectedBody: [][]string{{"1",
 			"2009-11-10T23:00:00Z"}},
 		expectedFoot: nil,
 	},
@@ -78,8 +77,8 @@ var tests = []struct {
 		},
 		expectedHead: []string{"id2", "nam"},
 		expectedBody: [][]string{
-			[]string{"1", "name1"},
-			[]string{"2", "name2"},
+			{"1", "name1"},
+			{"2", "name2"},
 		},
 		expectedFoot: nil,
 	},
@@ -93,8 +92,8 @@ var tests = []struct {
 		},
 		expectedHead: []string{"id2", "name2"},
 		expectedBody: [][]string{
-			[]string{"1", "naming1"},
-			[]string{"2", "naming2"},
+			{"1", "naming1"},
+			{"2", "naming2"},
 		},
 		expectedFoot: nil,
 	},
@@ -104,8 +103,8 @@ var tests = []struct {
 		},
 		expectedHead: []string{"number"},
 		expectedBody: [][]string{
-			[]string{"1"},
-			[]string{"2"},
+			{"1"},
+			{"2"},
 		},
 		expectedFoot: []string{"", "hey"},
 	},
@@ -115,7 +114,7 @@ var tests = []struct {
 		},
 		expectedHead: []string{"ID"},
 		expectedBody: [][]string{
-			[]string{"new"},
+			{"new"},
 		},
 		expectedFoot: nil,
 	},
@@ -125,7 +124,7 @@ var tests = []struct {
 		},
 		expectedHead: []string{"Loc"},
 		expectedBody: [][]string{
-			[]string{"spec"},
+			{"spec"},
 		},
 		expectedFoot: nil,
 	},
@@ -134,7 +133,7 @@ var tests = []struct {
 func TestGetHeader(t *testing.T) {
 	typesToRecurse = []reflect.Type{reflect.TypeOf(nested{})}
 	typesToSpecialize = []ToSpecialize{
-		ToSpecialize{
+		{
 			reflect.TypeOf(time.Location{}),
 			func(i interface{}) (string, error) {
 				_, ok := i.(time.Location)
@@ -168,7 +167,7 @@ func TestGetHeader(t *testing.T) {
 func TestGetBody(t *testing.T) {
 	typesToRecurse = []reflect.Type{reflect.TypeOf(nested{})}
 	typesToSpecialize = []ToSpecialize{
-		ToSpecialize{
+		{
 			reflect.TypeOf(time.Location{}),
 			func(i interface{}) (string, error) {
 				_, ok := i.(time.Location)
@@ -208,7 +207,7 @@ func TestGetBody(t *testing.T) {
 func TestGetFooter(t *testing.T) {
 	typesToRecurse = []reflect.Type{reflect.TypeOf(nested{})}
 	typesToSpecialize = []ToSpecialize{
-		ToSpecialize{
+		{
 			reflect.TypeOf(time.Location{}),
 			func(i interface{}) (string, error) {
 				_, ok := i.(time.Location)
