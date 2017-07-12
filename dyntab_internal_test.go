@@ -23,6 +23,10 @@ type (
 	toString struct {
 		ID MyInt
 	}
+
+	specialized struct {
+		Loc time.Location
+	}
 )
 
 func (f footers) Footer() ([]string, error) {
@@ -115,10 +119,33 @@ var tests = []struct {
 		},
 		expectedFoot: nil,
 	},
+	{
+		in: specialized{
+			*time.UTC,
+		},
+		expectedHead: []string{"Loc"},
+		expectedBody: [][]string{
+			[]string{"spec"},
+		},
+		expectedFoot: nil,
+	},
 }
 
 func TestGetHeader(t *testing.T) {
 	typesToRecurse = []reflect.Type{reflect.TypeOf(nested{})}
+	typesToSpecialize = []ToSpecialize{
+		ToSpecialize{
+			reflect.TypeOf(time.Location{}),
+			func(i interface{}) (string, error) {
+				_, ok := i.(time.Location)
+				if ok {
+					return "spec", nil
+				}
+				return "", nil
+			},
+		},
+	}
+
 	for _, test := range tests {
 		ret, err := getHeader(test.in)
 		if err != nil {
@@ -140,6 +167,19 @@ func TestGetHeader(t *testing.T) {
 
 func TestGetBody(t *testing.T) {
 	typesToRecurse = []reflect.Type{reflect.TypeOf(nested{})}
+	typesToSpecialize = []ToSpecialize{
+		ToSpecialize{
+			reflect.TypeOf(time.Location{}),
+			func(i interface{}) (string, error) {
+				_, ok := i.(time.Location)
+				if ok {
+					return "spec", nil
+				}
+				return "", nil
+			},
+		},
+	}
+
 	for _, test := range tests {
 		ret, err := getBody(test.in)
 		if err != nil {
@@ -167,6 +207,19 @@ func TestGetBody(t *testing.T) {
 
 func TestGetFooter(t *testing.T) {
 	typesToRecurse = []reflect.Type{reflect.TypeOf(nested{})}
+	typesToSpecialize = []ToSpecialize{
+		ToSpecialize{
+			reflect.TypeOf(time.Location{}),
+			func(i interface{}) (string, error) {
+				_, ok := i.(time.Location)
+				if ok {
+					return "spec", nil
+				}
+				return "", nil
+			},
+		},
+	}
+
 	for _, test := range tests {
 		ret, err := getFooter(test.in)
 		if err != nil {
