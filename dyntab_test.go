@@ -33,13 +33,13 @@ type (
 
 	testToString struct {
 		ID int
-		T  *MyTime
+		T  MyTime
 	}
 )
 
-func (t *testFooterS) Footer() ([]string, error) {
+func (t testFooterS) Footer() ([]string, error) {
 	sum := float64(0.0)
-	for _, t := range *t {
+	for _, t := range t {
 		sum += t.amount
 	}
 	sums := fmt.Sprintf("%.2f", sum)
@@ -77,16 +77,16 @@ var (
 	test2Sex = [][]string{[]string{"1", "2012-12-12"}}
 	test2S   = testToString{
 		ID: int(1),
-		T:  &MyTime{time.Unix(1355270400, 0)},
+		T:  MyTime{time.Unix(1355270400, 0)},
 	}
 )
 
-func (t *MyTime) MarshalText() (text []byte, err error) {
-	return []byte((*t).Format("2006-01-02")), nil
+func (t MyTime) MarshalText() (text []byte, err error) {
+	return []byte(t.Format("2006-01-02")), nil
 }
 
 func TestGetHeader_struct(t *testing.T) {
-	h, err := getHeader(&l)
+	h, err := getHeader(l)
 	if err != nil {
 		t.Error("error declared", err)
 		return
@@ -106,7 +106,7 @@ func TestGetHeader_struct(t *testing.T) {
 }
 
 func TestGetHeader_slice(t *testing.T) {
-	h, err := getHeader(&ls)
+	h, err := getHeader(ls)
 	if err != nil {
 		t.Error("error declared", err)
 		return
@@ -127,7 +127,7 @@ func TestGetHeader_slice(t *testing.T) {
 
 func TestGetHeader_nested(t *testing.T) {
 	typesToRecurse = toPrint
-	h, err := getHeader(&ln)
+	h, err := getHeader(ln)
 	if err != nil {
 		t.Error("error declared", err)
 		return
@@ -147,7 +147,7 @@ func TestGetHeader_nested(t *testing.T) {
 }
 
 func TestGetBody_struct(t *testing.T) {
-	h, err := getBody(&l)
+	h, err := getBody(l)
 	if err != nil {
 		t.Error("error declared", err)
 		return
@@ -169,7 +169,7 @@ func TestGetBody_struct(t *testing.T) {
 }
 
 func TestGetBody_slice(t *testing.T) {
-	h, err := getBody(&ls)
+	h, err := getBody(ls)
 	if err != nil {
 		t.Error("error declared", err)
 		return
@@ -197,7 +197,7 @@ func TestGetBody_slice(t *testing.T) {
 
 func TestGetBody_nested(t *testing.T) {
 	typesToRecurse = toPrint
-	h, err := getBody(&ln)
+	h, err := getBody(ln)
 	if err != nil {
 		t.Error("error declared", err)
 		return
@@ -220,7 +220,7 @@ func TestGetBody_nested(t *testing.T) {
 
 func TestGetBody_tostring(t *testing.T) {
 	typesToRecurse = toPrint
-	h, err := getBody(&test2S)
+	h, err := getBody(test2S)
 	if err != nil {
 		t.Error("error declared", err)
 		return
@@ -282,7 +282,7 @@ func TestGetFooter_slice(t *testing.T) {
 }
 
 func TestGetFooter_impl(t *testing.T) {
-	h, err := getFooter(&ts)
+	h, err := getFooter(ts)
 	if err != nil {
 		t.Error("error declared", err)
 		return
