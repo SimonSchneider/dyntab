@@ -1,302 +1,187 @@
 package dyntab
 
 import (
-	"fmt"
+	//"fmt"
 	"reflect"
 	"testing"
 	"time"
 )
 
 type (
-	testLabel struct {
-		id          int64  `tab:"id"`
-		Name        string `tab:"good"`
-		Description string `tab:"-"`
-		Test        string
+	nested struct {
+		name2 string
 	}
 
-	testLabeln struct {
-		testLabel
-		id2 int64 `tab:"id2"`
+	footers []footer
+
+	footer struct {
+		number int
 	}
 
-	testFooterS []testFooter
+	MyInt struct{ int }
 
-	testFooter struct {
-		id     int64  `tab:"-"`
-		name   string `tab:"name"`
-		desc   string `tab:"desc"`
-		amount float64
-	}
-
-	MyTime struct{ time.Time }
-
-	testToString struct {
-		ID int
-		T  MyTime
+	toString struct {
+		ID MyInt
 	}
 )
 
-func (t testFooterS) Footer() ([]string, error) {
-	sum := float64(0.0)
-	for _, t := range t {
-		sum += t.amount
-	}
-	sums := fmt.Sprintf("%.2f", sum)
-	return []string{"", "total", sums}, nil
+func (f footers) Footer() ([]string, error) {
+	return []string{"", "hey"}, nil
 }
 
-var (
-	exheader     = []string{"id", "good", "Test"}
-	exheaderNest = []string{"id", "good", "Test", "id2"}
-	exbodyStruct = [][]string{
-		[]string{"1", "nam", "hello"},
-	}
-	l  = testLabel{1, "nam", "desc", "hello"}
-	ln = testLabeln{l, 2}
-	ls = []testLabel{
-		testLabel{1, "line1", "desc1", "test1"},
-		testLabel{2, "line2", "desc2", "test2"},
-	}
-	exbodySlice = [][]string{
-		[]string{"1", "line1", "test1"},
-		[]string{"2", "line2", "test2"},
-	}
-	exfooter = []string{}
-	ts       = testFooterS{
-		testFooter{1, "test1", "testing", 29.2},
-		testFooter{1, "test1", "testing2", 30.8},
-	}
-	exfooterts = []string{"", "total", "60.00"}
-
-	toPrint = []reflect.Type{
-		reflect.TypeOf(testLabeln{}),
-		reflect.TypeOf(testLabel{}),
-	}
-
-	test2Sex = [][]string{[]string{"1", "2012-12-12"}}
-	test2S   = testToString{
-		ID: int(1),
-		T:  MyTime{time.Unix(1355270400, 0)},
-	}
-)
-
-func (t MyTime) MarshalText() (text []byte, err error) {
-	return []byte(t.Format("2006-01-02")), nil
+func (f MyInt) MarshalText() ([]byte, error) {
+	return []byte("new"), nil
 }
 
-func TestGetHeader_struct(t *testing.T) {
-	h, err := getHeader(l)
-	if err != nil {
-		t.Error("error declared", err)
-		return
-	}
-	if len(exheader) != len(h) {
-		t.Error("header not correct lenght, got:", len(h),
-			"expected:", len(exheader))
-		return
-	}
-	for i, eh := range exheader {
-		if eh != h[i] {
-			t.Error("header incorrect, got:", eh,
-				"expected:", exheader)
-			return
+var tests = []struct {
+	in           interface{}
+	expectedHead []string
+	expectedBody [][]string
+	expectedFoot []string
+}{
+	{
+		in: struct {
+			id   int
+			Name string `tab:"-"`
+		}{
+			1, "name",
+		},
+		expectedHead: []string{"id"},
+		expectedBody: [][]string{[]string{"1"}},
+		expectedFoot: nil,
+	},
+	{
+		in: struct {
+			id int
+			Ti time.Time `tab:"tim"`
+		}{
+			1, time.Date(2009,
+				time.November, 10,
+				23, 0, 0, 0, time.UTC),
+		},
+		expectedHead: []string{"id", "tim"},
+		expectedBody: [][]string{[]string{"1",
+			"2009-11-10T23:00:00Z"}},
+		expectedFoot: nil,
+	},
+	{
+		in: []struct {
+			id   int    `tab:"id2"`
+			Name string `tab:"nam"`
+		}{
+			{1, "name1"},
+			{2, "name2"},
+		},
+		expectedHead: []string{"id2", "nam"},
+		expectedBody: [][]string{
+			[]string{"1", "name1"},
+			[]string{"2", "name2"},
+		},
+		expectedFoot: nil,
+	},
+	{
+		in: []struct {
+			id int `tab:"id2"`
+			nested
+		}{
+			{1, nested{"naming1"}},
+			{2, nested{"naming2"}},
+		},
+		expectedHead: []string{"id2", "name2"},
+		expectedBody: [][]string{
+			[]string{"1", "naming1"},
+			[]string{"2", "naming2"},
+		},
+		expectedFoot: nil,
+	},
+	{
+		in: footers{
+			{1}, {2},
+		},
+		expectedHead: []string{"number"},
+		expectedBody: [][]string{
+			[]string{"1"},
+			[]string{"2"},
+		},
+		expectedFoot: []string{"", "hey"},
+	},
+	{
+		in: toString{
+			MyInt{1},
+		},
+		expectedHead: []string{"ID"},
+		expectedBody: [][]string{
+			[]string{"new"},
+		},
+		expectedFoot: nil,
+	},
+}
+
+func TestGetHeader(t *testing.T) {
+	typesToRecurse = []reflect.Type{reflect.TypeOf(nested{})}
+	for _, test := range tests {
+		ret, err := getHeader(test.in)
+		if err != nil {
+			t.Error("Got an error", err, "when input", test)
+			continue
 		}
-	}
-}
-
-func TestGetHeader_slice(t *testing.T) {
-	h, err := getHeader(ls)
-	if err != nil {
-		t.Error("error declared", err)
-		return
-	}
-	if len(exheader) != len(h) {
-		t.Error("header not correct lenght, got:", len(h),
-			"expected:", len(exheader))
-		return
-	}
-	for i, eh := range exheader {
-		if eh != h[i] {
-			t.Error("header incorrect, got:", eh,
-				"expected:", exheader)
-			return
+		if len(ret) != len(test.expectedHead) {
+			t.Error("Expected", test.expectedHead, "got", ret)
+			continue
 		}
-	}
-}
-
-func TestGetHeader_nested(t *testing.T) {
-	typesToRecurse = toPrint
-	h, err := getHeader(ln)
-	if err != nil {
-		t.Error("error declared", err)
-		return
-	}
-	if len(exheaderNest) != len(h) {
-		t.Error("header not correct lenght, got:", h,
-			"expected:", exheaderNest)
-		return
-	}
-	for i, eh := range exheaderNest {
-		if eh != h[i] {
-			t.Error("header incorrect, got:", eh,
-				"expected:", exheaderNest)
-			return
-		}
-	}
-}
-
-func TestGetBody_struct(t *testing.T) {
-	h, err := getBody(l)
-	if err != nil {
-		t.Error("error declared", err)
-		return
-	}
-	if len(exbodyStruct) != len(h) {
-		t.Error("body not correct lenght, got:", len(h),
-			"expected:", len(exheader))
-		return
-	}
-	for i, ehr := range exbodyStruct {
-		for j, eh := range ehr {
-			if eh != h[i][j] {
-				t.Error("header incorrect, got:", eh,
-					"expected:", exheader)
-				return
+		for i, e := range test.expectedHead {
+			if e != ret[i] {
+				t.Error("Expected", test.expectedHead, "got", ret)
+				continue
 			}
 		}
 	}
 }
 
-func TestGetBody_slice(t *testing.T) {
-	h, err := getBody(ls)
-	if err != nil {
-		t.Error("error declared", err)
-		return
-	}
-	if len(exbodySlice) != len(h) {
-		t.Error("body row not correct lenght, got:", len(h),
-			"expected:", len(exbodySlice))
-		return
-	}
-	for i, ehr := range exbodySlice {
-		if len(ehr) != len(h[i]) {
-			t.Error("body column not correct lenght, got:", len(h[i]),
-				"expected:", len(ehr))
-			return
+func TestGetBody(t *testing.T) {
+	typesToRecurse = []reflect.Type{reflect.TypeOf(nested{})}
+	for _, test := range tests {
+		ret, err := getBody(test.in)
+		if err != nil {
+			t.Error("Got an error", err, "when input", test)
+			continue
 		}
-		for j, eh := range ehr {
-			if eh != h[i][j] {
-				t.Error("body incorrect, got:", eh,
-					"expected:", h[i][j])
-				return
+		if len(ret) != len(test.expectedBody) {
+			t.Error("Expected", test.expectedBody, "got", ret)
+			continue
+		}
+		for i, er := range test.expectedBody {
+			if len(er) != len(ret[i]) {
+				t.Error("Expected", test.expectedBody, "got", ret)
+				continue
+			}
+			for j, e := range er {
+				if e != ret[i][j] {
+					t.Error("Expected", test.expectedBody, "got", ret)
+					continue
+				}
 			}
 		}
 	}
 }
 
-func TestGetBody_nested(t *testing.T) {
-	typesToRecurse = toPrint
-	h, err := getBody(ln)
-	if err != nil {
-		t.Error("error declared", err)
-		return
-	}
-	if len(exbodyStruct) != len(h) {
-		t.Error("body not correct lenght, got:", len(h),
-			"expected:", len(exheader))
-		return
-	}
-	for i, ehr := range exbodyStruct {
-		for j, eh := range ehr {
-			if eh != h[i][j] {
-				t.Error("header incorrect, got:", eh,
-					"expected:", exheader)
-				return
+func TestGetFooter(t *testing.T) {
+	typesToRecurse = []reflect.Type{reflect.TypeOf(nested{})}
+	for _, test := range tests {
+		ret, err := getFooter(test.in)
+		if err != nil {
+			t.Error("Got an error", err, "when input", test)
+			continue
+		}
+		if len(ret) != len(test.expectedFoot) {
+			t.Error("Expected", test.expectedFoot, "got", ret)
+			continue
+		}
+		for i, er := range test.expectedFoot {
+			if er != ret[i] {
+				t.Error("Expected", test.expectedFoot, "got", ret)
+				continue
 			}
-		}
-	}
-}
-
-func TestGetBody_tostring(t *testing.T) {
-	typesToRecurse = toPrint
-	h, err := getBody(test2S)
-	if err != nil {
-		t.Error("error declared", err)
-		return
-	}
-	if len(test2Sex) != len(h) {
-		t.Error("body not correct lenght, got:", h,
-			"expected:", test2Sex)
-		return
-	}
-	for i, ehr := range test2Sex {
-		for j, eh := range ehr {
-			if eh != h[i][j] {
-				t.Error("body incorrect, got:", h,
-					"expected:", test2Sex)
-				return
-			}
-		}
-	}
-}
-
-func TestGetFooter_struct(t *testing.T) {
-	h, err := getFooter(l)
-	if err != nil {
-		t.Error("error declared", err)
-		return
-	}
-	if len(exfooter) != len(h) {
-		t.Error("header not correct lenght, got:", len(h),
-			"expected:", len(exfooter))
-		return
-	}
-	for i, eh := range exfooter {
-		if eh != h[i] {
-			t.Error("header incorrect, got:", eh,
-				"expected:", exfooter)
-			return
-		}
-	}
-}
-
-func TestGetFooter_slice(t *testing.T) {
-	h, err := getFooter(ls)
-	if err != nil {
-		t.Error("error declared", err)
-		return
-	}
-	if len(exfooter) != len(h) {
-		t.Error("header not correct lenght, got:", len(h),
-			"expected:", len(exfooter))
-		return
-	}
-	for i, eh := range exfooter {
-		if eh != h[i] {
-			t.Error("header incorrect, got:", eh,
-				"expected:", exfooter)
-			return
-		}
-	}
-}
-
-func TestGetFooter_impl(t *testing.T) {
-	h, err := getFooter(ts)
-	if err != nil {
-		t.Error("error declared", err)
-		return
-	}
-	if len(exfooterts) != len(h) {
-		t.Error("footer not correct lenght, got:", h,
-			"expected:", exfooterts)
-		return
-	}
-	for i, eh := range exfooterts {
-		if eh != h[i] {
-			t.Error("footer incorrect, got:", eh,
-				"expected:", exfooterts)
-			return
 		}
 	}
 }
