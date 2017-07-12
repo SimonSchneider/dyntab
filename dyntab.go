@@ -10,7 +10,10 @@ import (
 	"reflect"
 )
 
-var typesToRecurse []reflect.Type
+var (
+	typesToRecurse    []reflect.Type
+	typesToSpecialize toSpecializes
+)
 
 type (
 	// TabFooter interface can be implemented to override the
@@ -30,6 +33,14 @@ type (
 	TabBody interface {
 		Body() ([][]string, error)
 	}
+
+	// ToSpecialize is struct for holding to string specializations
+	ToSpecialize struct {
+		Type     reflect.Type
+		ToString func(interface{}) (string, error)
+	}
+
+	toSpecializes []ToSpecialize
 )
 
 // PrintTable prints a table of the interface the toRecurse slice is required so it's possible to determine what structs to print as a column and which to recurs into, toRecurse structs will be recursed into.
@@ -126,6 +137,12 @@ func getStructBody(in reflect.Value) (s []string) {
 
 func getString(in reflect.Value) string {
 	if in.CanInterface() {
+		if f, ok := typesToSpecialize.contains(in.Type()); ok {
+			s, err := f(in.Interface())
+			if err == nil {
+				return s
+			}
+		}
 		t, ok := in.Interface().(encoding.TextMarshaler)
 		if ok {
 			s, err := t.MarshalText()
@@ -144,6 +161,15 @@ func getString(in reflect.Value) string {
 		return in.String()
 	}
 	return ""
+}
+
+func (ts toSpecializes) contains(in reflect.Type) (func(interface{}) (string, error), bool) {
+	for _, t := range ts {
+		if t.Type == in {
+			return t.ToString, true
+		}
+	}
+	return nil, false
 }
 
 func getFooter(in interface{}) ([]string, error) {
