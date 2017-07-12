@@ -44,13 +44,23 @@ type (
 )
 
 // PrintTable prints a table of the interface the toRecurse slice is required so it's possible to determine what structs to print as a column and which to recurs into, toRecurse structs will be recursed into.
-func PrintTable(w io.Writer, in interface{}, toRecurse []reflect.Type) (err error) {
+func PrintTable(w io.Writer, in interface{}, toRecurse []reflect.Type, toSpecialize []ToSpecialize) (err error) {
 	var header, footer []string
 	var body [][]string
 	typesToRecurse = toRecurse
+	typesToSpecialize = toSpecialize
 	header, err = getHeader(in)
+	if err != nil {
+		return err
+	}
 	body, err = getBody(in)
+	if err != nil {
+		return err
+	}
 	footer, err = getFooter(in)
+	if err != nil {
+		return err
+	}
 	tab := tablewriter.NewWriter(w)
 	tab.SetHeader(header)
 	tab.AppendBulk(body)
