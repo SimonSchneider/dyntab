@@ -1,6 +1,6 @@
 # DYNamicTABles
 
-[![GoDoc](https://godoc.org/github.com/SimonSchneider/dyntab?status.svg)](https://godoc.org/github.com/SimonSchneider/dyntab)
+[![GoDoc](https://godoc.org/github.com/SimonSchneider/dyntab?status.svg)](https://godoc.org/github.com/SimonSchneider/dyntab) [![Go Report Card](https://goreportcard.com/badge/github.com/simonschneider/dyntab)](https://goreportcard.com/report/github.com/simonschneider/dyntab)
 
 Dynamic table generation for golang using https://github.com/olekukonko/tablewriter
 
