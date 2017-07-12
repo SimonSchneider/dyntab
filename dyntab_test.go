@@ -23,6 +23,10 @@ type (
 	toString struct {
 		ID MyInt
 	}
+
+	specialized struct {
+		Loc time.Location
+	}
 )
 
 func (f footers) Footer() ([]string, error) {
@@ -112,6 +116,16 @@ var tests = []struct {
 		expectedHead: []string{"ID"},
 		expectedBody: [][]string{
 			[]string{"new"},
+		},
+		expectedFoot: nil,
+	},
+	{
+		in: specialized{
+			*time.UTC,
+		},
+		expectedHead: []string{"Loc"},
+		expectedBody: [][]string{
+			[]string{"spec"},
 		},
 		expectedFoot: nil,
 	},
