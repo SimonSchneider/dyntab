@@ -5,6 +5,7 @@ os:
         - linux
 before_install:
         - go get github.com/golang/lint/golint
+        - go get honnef.co/go/tools/cmd/staticcheck
         - go get -d ./...
 script:
         - go build ./...
