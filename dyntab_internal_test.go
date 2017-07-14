@@ -131,8 +131,9 @@ var tests = []struct {
 }
 
 func TestGetHeader(t *testing.T) {
-	typesToRecurse = []reflect.Type{reflect.TypeOf(nested{})}
-	typesToSpecialize = []ToSpecialize{
+	table := Table{}
+	table.typesToRecurse = []reflect.Type{reflect.TypeOf(nested{})}
+	table.typesToSpecialize = []ToSpecialize{
 		{
 			reflect.TypeOf(time.Location{}),
 			func(i interface{}) (string, error) {
@@ -146,7 +147,8 @@ func TestGetHeader(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		ret, err := getHeader(test.in)
+		table.data = test.in
+		ret, err := table.getHeader()
 		if err != nil {
 			t.Error("Got an error", err, "when input", test)
 			continue
@@ -165,8 +167,9 @@ func TestGetHeader(t *testing.T) {
 }
 
 func TestGetBody(t *testing.T) {
-	typesToRecurse = []reflect.Type{reflect.TypeOf(nested{})}
-	typesToSpecialize = []ToSpecialize{
+	table := Table{}
+	table.typesToRecurse = []reflect.Type{reflect.TypeOf(nested{})}
+	table.typesToSpecialize = []ToSpecialize{
 		{
 			reflect.TypeOf(time.Location{}),
 			func(i interface{}) (string, error) {
@@ -180,7 +183,8 @@ func TestGetBody(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		ret, err := getBody(test.in)
+		table.data = test.in
+		ret, err := table.getBody()
 		if err != nil {
 			t.Error("Got an error", err, "when input", test)
 			continue
@@ -205,8 +209,9 @@ func TestGetBody(t *testing.T) {
 }
 
 func TestGetFooter(t *testing.T) {
-	typesToRecurse = []reflect.Type{reflect.TypeOf(nested{})}
-	typesToSpecialize = []ToSpecialize{
+	table := Table{}
+	table.typesToRecurse = []reflect.Type{reflect.TypeOf(nested{})}
+	table.typesToSpecialize = []ToSpecialize{
 		{
 			reflect.TypeOf(time.Location{}),
 			func(i interface{}) (string, error) {
@@ -220,7 +225,8 @@ func TestGetFooter(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		ret, err := getFooter(test.in)
+		table.data = test.in
+		ret, err := table.getFooter()
 		if err != nil {
 			t.Error("Got an error", err, "when input", test)
 			continue

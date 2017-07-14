@@ -10,12 +10,14 @@ import (
 	"reflect"
 )
 
-var (
-	typesToRecurse    []reflect.Type
-	typesToSpecialize toSpecializes
-)
-
 type (
+	//Table holds the main table data
+	Table struct {
+		data              interface{}
+		typesToRecurse    []reflect.Type
+		typesToSpecialize toSpecializes
+	}
+
 	// TabFooter interface can be implemented to override the
 	// default footer creation
 	TabFooter interface {
@@ -43,21 +45,30 @@ type (
 	toSpecializes []ToSpecialize
 )
 
-// PrintTable prints a table of the interface the toRecurse slice is required so it's possible to determine what structs to print as a column and which to recurs into, toRecurse structs will be recursed into.
-func PrintTable(w io.Writer, in interface{}, toRecurse []reflect.Type, toSpecialize []ToSpecialize) (err error) {
+//NewTable returns a new table ready for printing
+func NewTable() *Table {
+	return &Table{}
+}
+
+//SetData sets the data of the table
+func (t *Table) SetData(i interface{}) *Table {
+	t.data = i
+	return t
+}
+
+//PrintTo prints the table to the io.Writer
+func (t Table) PrintTo(w io.Writer) (err error) {
 	var header, footer []string
 	var body [][]string
-	typesToRecurse = toRecurse
-	typesToSpecialize = toSpecialize
-	header, err = getHeader(in)
+	header, err = t.getHeader()
 	if err != nil {
 		return err
 	}
-	body, err = getBody(in)
+	body, err = t.getBody()
 	if err != nil {
 		return err
 	}
-	footer, err = getFooter(in)
+	footer, err = t.getFooter()
 	if err != nil {
 		return err
 	}
@@ -69,34 +80,46 @@ func PrintTable(w io.Writer, in interface{}, toRecurse []reflect.Type, toSpecial
 	return nil
 }
 
-func getHeader(in interface{}) ([]string, error) {
-	n, ok := in.(TabHeader)
+//Recurse sets the reflect.Types, Recurse slice is required so it's possible to determine what structs to print as a column and which to recurse into,
+func (t *Table) Recurse(r []reflect.Type) *Table {
+	t.typesToRecurse = r
+	return t
+}
+
+//Specialize sets the toSpecialize types to the specialize
+func (t *Table) Specialize(s []ToSpecialize) *Table {
+	t.typesToSpecialize = s
+	return t
+}
+
+func (t Table) getHeader() ([]string, error) {
+	n, ok := (t.data).(TabHeader)
 	if ok {
 		return (n).Header()
 	}
-	i := reflect.Indirect(reflect.ValueOf(in)).Interface()
-	return getTypeHeader(reflect.TypeOf(i))
+	i := reflect.Indirect(reflect.ValueOf(t.data)).Interface()
+	return getTypeHeader(reflect.TypeOf(i), t.typesToRecurse)
 }
 
-func getTypeHeader(in reflect.Type) (s []string, err error) {
+func getTypeHeader(in reflect.Type, ttr []reflect.Type) (s []string, err error) {
 	if in.Kind() == reflect.Slice {
 		in = in.Elem()
 	}
 	if in.Kind() != reflect.Struct {
 		return nil, errors.New("Not possible to find struct")
 	}
-	return getStructHeader(in), nil
+	return getStructHeader(in, ttr), nil
 }
 
-func getStructHeader(in reflect.Type) (s []string) {
+func getStructHeader(in reflect.Type, ttr []reflect.Type) (s []string) {
 	for i := 0; i < in.NumField(); i++ {
 		field := in.Field(i)
 		t := field.Tag.Get("tab")
 		if t == "-" {
 			continue
 		}
-		if contains(typesToRecurse, field.Type) {
-			s = append(s, getStructHeader(field.Type)...)
+		if contains(ttr, field.Type) {
+			s = append(s, getStructHeader(field.Type, ttr)...)
 		} else if t != "" {
 			s = append(s, t)
 		} else {
@@ -106,28 +129,28 @@ func getStructHeader(in reflect.Type) (s []string) {
 	return s
 }
 
-func getBody(in interface{}) (s [][]string, err error) {
-	n, ok := in.(TabBody)
+func (t Table) getBody() (s [][]string, err error) {
+	n, ok := t.data.(TabBody)
 	if ok {
 		return (n).Body()
 	}
-	i := reflect.Indirect(reflect.ValueOf(in)).Interface()
-	return getValueBody(reflect.ValueOf(i)), nil
+	i := reflect.Indirect(reflect.ValueOf(t.data)).Interface()
+	return getValueBody(reflect.ValueOf(i), t.typesToRecurse, t.typesToSpecialize), nil
 }
 
-func getValueBody(in reflect.Value) (s [][]string) {
+func getValueBody(in reflect.Value, ttr []reflect.Type, tts toSpecializes) (s [][]string) {
 	if in.Type().Kind() == reflect.Slice {
 		for i := 0; i < in.Len(); i++ {
 			v := in.Index(i)
-			s = append(s, getStructBody(v))
+			s = append(s, getStructBody(v, ttr, tts))
 		}
 	} else if in.Type().Kind() == reflect.Struct {
-		s = append(s, getStructBody(in))
+		s = append(s, getStructBody(in, ttr, tts))
 	}
 	return
 }
 
-func getStructBody(in reflect.Value) (s []string) {
+func getStructBody(in reflect.Value, ttr []reflect.Type, tts toSpecializes) (s []string) {
 	st := in.Type()
 	for i := 0; i < st.NumField(); i++ {
 		v := in.Field(i)
@@ -136,18 +159,18 @@ func getStructBody(in reflect.Value) (s []string) {
 		if t == "-" {
 			continue
 		}
-		if contains(typesToRecurse, field.Type) {
-			s = append(s, getStructBody(v)...)
+		if contains(ttr, field.Type) {
+			s = append(s, getStructBody(v, ttr, tts)...)
 		} else {
-			s = append(s, getString(v))
+			s = append(s, getString(v, tts))
 		}
 	}
 	return
 }
 
-func getString(in reflect.Value) string {
+func getString(in reflect.Value, tts toSpecializes) string {
 	if in.CanInterface() {
-		if f, ok := typesToSpecialize.contains(in.Type()); ok {
+		if f, ok := tts.contains(in.Type()); ok {
 			s, err := f(in.Interface())
 			if err == nil {
 				return s
@@ -182,8 +205,8 @@ func (ts toSpecializes) contains(in reflect.Type) (func(interface{}) (string, er
 	return nil, false
 }
 
-func getFooter(in interface{}) ([]string, error) {
-	n, ok := in.(TabFooter)
+func (t Table) getFooter() ([]string, error) {
+	n, ok := t.data.(TabFooter)
 	if ok {
 		return (n).Footer()
 	}

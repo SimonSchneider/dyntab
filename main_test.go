@@ -69,19 +69,15 @@ func Example() {
 		},
 	}
 
-	dyntab.PrintTable(os.Stdout,
-		cont,
-		[]reflect.Type{
+	dyntab.NewTable().
+		SetData(cont).
+		Recurse([]reflect.Type{
 			reflect.TypeOf(info{}),
-			reflect.TypeOf(container{}),
-		},
-		[]dyntab.ToSpecialize{
-			{
-				reflect.TypeOf(time.Location{}),
-				Loc2String,
-			},
-		},
-	)
+			reflect.TypeOf(container{})}).
+		Specialize([]dyntab.ToSpecialize{{
+			reflect.TypeOf(time.Location{}),
+			Loc2String}}).
+		PrintTo(os.Stdout)
 	// Output:
 	// +-------+-------+----------------+------------+----------+
 	// | NAME  | DESC  | NUMBER OF SMTH |     T      | LOCATION |
