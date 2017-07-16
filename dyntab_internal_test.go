@@ -2,6 +2,7 @@ package dyntab
 
 import (
 	"bytes"
+	"errors"
 	"reflect"
 	"testing"
 	"time"
@@ -276,11 +277,38 @@ func (newType) Body() ([][]string, error) {
 	return [][]string{{"hey"}}, nil
 }
 
+type badBody int
+
+func (badBody) Header() ([]string, error) {
+	return []string{"hey"}, nil
+}
+func (badBody) Body() ([][]string, error) {
+	return nil, errors.New("new")
+}
+
+type badFoot int
+
+func (badFoot) Header() ([]string, error) {
+	return []string{"hey"}, nil
+}
+func (badFoot) Body() ([][]string, error) {
+	return [][]string{{"hey"}}, nil
+}
+func (badFoot) Footer() ([]string, error) {
+	return nil, errors.New("new")
+}
+
 func TestInterfaceImplementation(t *testing.T) {
-	n := newType(0)
-	table := Table{}
-	table.data = n
 	var b []byte
 	out := bytes.NewBuffer(b)
+	table := Table{}
+	n := newType(0)
+	table.data = n
+	table.PrintTo(out)
+	bb := badBody(0)
+	table.data = bb
+	table.PrintTo(out)
+	bf := badFoot(0)
+	table.data = bf
 	table.PrintTo(out)
 }
