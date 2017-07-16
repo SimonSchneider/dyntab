@@ -60,6 +60,9 @@ func (t *Table) SetData(i interface{}) *Table {
 func (t Table) PrintTo(w io.Writer) (err error) {
 	var header, footer []string
 	var body [][]string
+	if t.data == nil {
+		return errors.New("no data")
+	}
 	header, err = t.getHeader()
 	if err != nil {
 		return err

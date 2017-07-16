@@ -1,6 +1,7 @@
 package dyntab
 
 import (
+	"bytes"
 	"reflect"
 	"testing"
 	"time"
@@ -9,6 +10,8 @@ import (
 type (
 	nested struct {
 		name2 string
+		val2  float64
+		val3  byte
 	}
 
 	footers []footer
@@ -87,13 +90,13 @@ var tests = []struct {
 			id int `tab:"id2"`
 			nested
 		}{
-			{1, nested{"naming1"}},
-			{2, nested{"naming2"}},
+			{1, nested{"naming1", 0.1, 'a'}},
+			{2, nested{"naming2", 1.0, 'a'}},
 		},
-		expectedHead: []string{"id2", "name2"},
+		expectedHead: []string{"id2", "name2", "val2", "val3"},
 		expectedBody: [][]string{
-			{"1", "naming1"},
-			{"2", "naming2"},
+			{"1", "naming1", "0.10", ""},
+			{"2", "naming2", "1.00", ""},
 		},
 		expectedFoot: nil,
 	},
@@ -242,4 +245,42 @@ func TestGetFooter(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestGetErrors(t *testing.T) {
+	table := Table{}
+	var b []byte
+	out := bytes.NewBuffer(b)
+	err := table.PrintTo(out)
+	if err == nil {
+		t.Error("didn't receive error on empty data")
+	}
+	table.data = 0
+	err = table.PrintTo(out)
+	if err == nil {
+		t.Error("didn't receive error on bad data")
+	}
+	table.data = []int{0}
+	err = table.PrintTo(out)
+	if err == nil {
+		t.Error("didn't receive error on bad data")
+	}
+}
+
+type newType int
+
+func (newType) Header() ([]string, error) {
+	return []string{"hey"}, nil
+}
+func (newType) Body() ([][]string, error) {
+	return [][]string{{"hey"}}, nil
+}
+
+func TestInterfaceImplementation(t *testing.T) {
+	n := newType(0)
+	table := Table{}
+	table.data = n
+	var b []byte
+	out := bytes.NewBuffer(b)
+	table.PrintTo(out)
 }
