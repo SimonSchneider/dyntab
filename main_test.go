@@ -2,7 +2,7 @@ package dyntab_test
 
 import (
 	"errors"
-	"github.com/simonschneider/dyntab"
+	"github.com/SimonSchneider/dyntab"
 	"os"
 	"reflect"
 	"strconv"
@@ -75,8 +75,8 @@ func Example() {
 			reflect.TypeOf(info{}),
 			reflect.TypeOf(container{})}).
 		Specialize([]dyntab.ToSpecialize{{
-			reflect.TypeOf(time.Location{}),
-			Loc2String}}).
+			Type:     reflect.TypeOf(time.Location{}),
+			ToString: Loc2String}}).
 		PrintTo(os.Stdout)
 	// Output:
 	// +-------+-------+----------------+------------+----------+
