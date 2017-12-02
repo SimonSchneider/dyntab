@@ -2,7 +2,7 @@ package dyntab_test
 
 import (
 	"errors"
-	"github.com/simonschneider/dyntab"
+	"github.com/SimonSchneider/dyntab"
 	"os"
 	"reflect"
 	"strconv"
